@@ -8,10 +8,12 @@
 </head>
 <body>
   <h1>Reverse IP Service</h1>
+  <main>
   <p>Your IP address: {{ client_ip }}</p>
   <p>Reversed IP: {{ reversed_ip }}</p>
-
-  <h2>Recently visited Original IPs & Reversed IPs</h2>
+  </main>
+  <main>
+    <section> <h2>Recently visited Original IPs & Reversed IPs</h2>
   <table>
     <thead>
       <tr>
@@ -30,5 +32,10 @@
       {% endfor %}
     </tbody>
   </table>
+</section>
+  </main>
+  <footer>
+    <p>&copy; 2024 Develop by <a href="https://www.linkedin.com/in/nowsathk/">Nowsath</a></p>
+  </footer>
 </body>
 </html>
