@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: api-dev
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+    spec:
+      containers:
+        - name: api3go
+          image: 006592501465.dkr.ecr.eu-north-1.amazonaws.com/api-api:dev
+          ports:
+            - containerPort: 5667
+          envFrom:
+          - secretRef:
+              name: apt-api-config
+          - secretRef:
+              name: apt-version
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 250m
+              memory: 760Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-svc
+  namespace: api-dev
+spec:
+  selector:
+    app.kubernetes.io/name: api
+  ports:
+    - port: 5667
+      targetPort: 5667
+  type: NodePort

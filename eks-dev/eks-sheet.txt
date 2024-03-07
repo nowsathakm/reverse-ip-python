@@ -1,0 +1,598 @@
+https://antonputra.com/kubernetes/add-iam-user-and-iam-role-to-eks/#add-iam-role-to-eks-cluster
+
+Use ECR image with Amazon EKS:
+https://devopstales.github.io/home/aws-eks-ecr/
+
+
+eksctl create cluster --config-file=create-cluster.yaml
+
+eksctl create cluster -f public-cluster.yaml
+
+aws eks --region eu-north-1 update-kubeconfig --name api-dev
+
+eksctl delete cluster --region=eu-north-1 --name=api-dev
+
+https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-iam-roles-create-permissions.html
+
+if you encounter any issues, check CloudFormation console or try 
+eksctl utils describe-stacks --region=eu-north-1 --cluster=demo
+
+10.0.0.179
+scp -i ~/.ssh/eks-admin.pem * ec2-user@13.49.0.170:~/eks-yaml
+ssh -i ~/.ssh/eks-admin.pem ec2-user@13.49.0.170
+
+eksctl create fargateprofile -f fargate-profile.yaml
+
+
+coredns requires NAT gateway to pull images
+https://aws.amazon.com/premiumsupport/knowledge-center/eks-resolve-pending-fargate-pods/
+
+kubectl rollout restart deployment coredns --namespace kube-system
+
+eksctl utils update-cluster-logging \
+    --enable-types all \
+    --region eu-north-1 \
+    --cluster api-dev \
+    --approve
+
+aws-logging cm issue:
+https://aws.amazon.com/premiumsupport/knowledge-center/cloudwatch-stream-container-logs-eks/
+aws-observability-namespace.yaml
+
+kubectl edit configmap aws-auth -n kube-system
+----------------------------------------------
+apiVersion: v1
+data:
+  mapRoles: |
+    - groups:
+      - system:bootstrappers
+      - system:nodes
+      - system:node-proxier
+      rolearn: arn:aws:iam::006592501465:role/eksctl-demo-cluster-FargatePodExecutionRole-1IQIZB093E0ZM
+      username: system:node:{{SessionName}}
+  mapUsers: |
+    - userarn: arn:aws:iam::006592501465:user/nowsath-admin
+      groups:
+      - system:masters
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2022-12-12T10:01:35Z"
+  name: aws-auth
+  namespace: kube-system
+  resourceVersion: "92266"
+  uid: b03bf961-5627-4b73-a2b8-c6fdc6a98489
+
+
+
+Ingress deployment examples
+https://www.stacksimplify.com/aws-eks/aws-fargate/learn-to-run-kubernetes-workloads-on-aws-eks-and-aws-fargate-serverless-part-2/
+https://gist.github.com/arun-gupta/54c14fd0fad3b4a4f1b044b529be392e
+https://dev.to/aws-builders/deploying-simple-application-to-eks-on-fargate-5ee2
+
+logging mechanism
+https://www.eksworkshop.com/advanced/330_servicemesh_using_appmesh/add_nodegroup_fargate/cloudwatch_setup/
+
+Sample deployment with ingress
+https://github.com/RekhuGopal/PythonHacks/tree/main/AWSBoto3Hacks/AWS-EKS-INGRESS-KUBERNETES
+https://github.com/RobinNagpal/kubernetes-tutorials/tree/master/06_tools/007_alb_ingress/01_eks
+https://gist.github.com/arun-gupta/54c14fd0fad3b4a4f1b044b529be392e
+
+
+Annotations
+https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/ingress/annotations/#success-codes
+
+
+eksctl utils associate-iam-oidc-provider --region eu-north-1 --cluster api-dev --approve
+
+https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
+
+eksctl create iamserviceaccount \
+  --cluster=api-dev \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --role-name "eksLoadBalancerControllerRole" \
+  --attach-policy-arn=arn:aws:iam::006592501465:policy/eks-LoadBalancerControllerIAMPolicy \
+  --approve
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=api-dev \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=eu-north-1 \
+  --set vpcId=vpc-03ea84b407700c942
+
+====================================================
+2022-12-13 18:06:27 [ℹ]  deleting EKS cluster "demo"
+2022-12-13 18:06:28 [ℹ]  deleting Fargate profile "fp-default"
+2022-12-13 18:08:36 [ℹ]  deleted Fargate profile "fp-default"
+2022-12-13 18:08:36 [ℹ]  deleted 1 Fargate profile(s)
+2022-12-13 18:08:36 [ℹ]  cleaning up AWS load balancers created by Kubernetes objects of Kind Service or Ingress
+2022-12-13 18:08:37 [ℹ]  
+2 sequential tasks: { 
+    2 sequential sub-tasks: { 
+        2 sequential sub-tasks: { 
+            delete IAM role for serviceaccount "kube-system/aws-load-balancer-controller",
+            delete serviceaccount "kube-system/aws-load-balancer-controller",
+        },
+        delete IAM OIDC provider,
+    }, delete cluster control plane "demo" [async] 
+}
+2022-12-13 18:08:37 [ℹ]  will delete stack "eksctl-demo-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2022-12-13 18:08:37 [ℹ]  waiting for stack "eksctl-demo-addon-iamserviceaccount-kube-system-aws-load-balancer-controller" to get deleted
+2022-12-13 18:08:37 [ℹ]  waiting for CloudFormation stack "eksctl-demo-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2022-12-13 18:09:08 [ℹ]  waiting for CloudFormation stack "eksctl-demo-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2022-12-13 18:09:08 [ℹ]  deleted serviceaccount "kube-system/aws-load-balancer-controller"
+2022-12-13 18:09:08 [ℹ]  will delete stack "eksctl-demo-cluster"
+2022-12-13 18:09:08 [✔]  all cluster resources were deleted
+
+These two have permission issue
+eksctl create addon --cluster api-dev --name kube-proxy --version latest \
+    --service-account-role-arn arn:aws:iam::006592501465:role/eksLoadBalancerControllerRole --force
+
+eksctl create addon --cluster api-dev --name kube-proxy --version latest \
+  --service-account-role-arn arn:aws:iam::006592501465:role/eksLoadBalancerControllerRole --force
+
+  https://app.clickup.com/37317319/v/dc/13jup7-12841/13jup7-5841
+
+
+  git push origin :refs/tags/"$BASE_STRING"
+
+  git tag --delete "$BASE_STRING"
+
+  echo "⚙️ Tagging..."
+  git tag -a -m "Tagging version $BASE_STRING" "$BASE_STRING"
+
+  git push origin "$BASE_STRING"
+
+  App3 Deployment scripts changes
+
+
+sSG0if3K2bFwXhgVpCyeKmki
+
+sudo /opt/bitnami/ctlscript.sh stop / start / status / restart
+
+
+https://serverfault.com/questions/792576/aws-elastic-load-balancer-how-many-concurrent-users-allowed
+
+kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+
+
+appspotr-com-studios-se-1997867822.eu-north-1.elb.amazonaws.com
+
+139.162.132.77
+
+https://www.youtube.com/watch?v=-8kFawk-EFs
+
+https://github.com/RekhuGopal/PythonHacks/blob/main/AWS_EKS_Conatiner_Insights/EnableContainerInsights.yaml
+
+# Template
+curl -s https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/<REPLACE_CLUSTER_NAME>/;s/{{region_name}}/<REPLACE-AWS_REGION>/" | kubectl apply -f -
+
+# Replaced Cluster Name and Region
+curl -s https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/api-dev/;s/{{region_name}}/eu-north-1/"
+
+
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/service/cwagent-prometheus/prometheus-eks-fargate.yaml | 
+sed "s/{{cluster_name}}/MyCluster/;s/{{region_name}}/region/" | 
+kubectl apply -f -
+
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/service/cwagent-prometheus/prometheus-eks-fargate.yaml | 
+sed "s/{{cluster_name}}/api-dev/;s/{{region_name}}/eu-north-1/"
+
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-deployment-manifest-templates/deployment-mode/service/cwagent-prometheus/sample_cloudwatch_dashboards/nginx-ingress/cw_dashboard_nginx_ingress_controller.json | sed "s/{{cluster_name}}/api-dev/;s/{{region_name}}/eu-north-1/"
+
+
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights-Prometheus-Setup.html
+
+eksctl create iamserviceaccount \
+ --name cwagent-prometheus \
+ --namespace amazon-cloudwatch \
+ --cluster api-dev \
+ --attach-policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy \
+ --approve \
+ --override-existing-serviceaccounts
+
+eksctl create fargateprofile -f fargate-amazon-cloudwatch.yaml
+
+kubectl create -f prometheus-eks-fargate.yaml
+
+kubectl get pod -l "app=cwagent-prometheus" -n amazon-cloudwatch
+
+kubectl delete -f prometheus-eks-fargate.yaml
+
+eksctl delete fargateprofile \
+ --name amazon-cloudwatch \
+ --cluster api-dev
+
+eksctl delete iamserviceaccount --name=cwagent-prometheus --cluster=api-dev --namespace=amazon-cloudwatch
+
+kubectl autoscale deployment api --cpu-percent=50 --min=1 --max=5
+
+terminationGracePeriodSeconds: 300 ??
+https://raw.githubusercontent.com/leandrodamascena/eks-fargate-medium/master/nginx-deployment.yaml
+
+custom metrics
+https://learnk8s.io/autoscaling-apps-kubernetes
+
+https://github.com/stefanprodan/eks-hpa-profile/blob/master/demo/podinfo/hpa.yaml
+
+https://aws.amazon.com/blogs/containers/autoscaling-amazon-eks-services-based-on-custom-prometheus-metrics-using-cloudwatch-container-insights/
+
+https://aws.amazon.com/blogs/containers/autoscaling-eks-on-fargate-with-custom-metrics/
+
+
+EKS/Fargate allows you to NOT run "Cluster Autoscaler"
+https://stackoverflow.com/questions/68159384/hpa-on-eks-fargate
+
+Metrics server
+https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html
+
+https://aws-quickstart.github.io/cdk-eks-blueprints/addons/container-insights/#view-metrics-for-cluster-and-workloads
+
+ContainerInsights
+------------------
+https://aws-otel.github.io/docs/getting-started/container-insights/eks-fargate
+https://github.com/aws-observability/aws-otel-collector/tree/main/deployment-template/eks
+
+https://aws.amazon.com/blogs/containers/fluent-bit-integration-in-cloudwatch-container-insights-for-eks/
+https://aws.amazon.com/blogs/containers/fluent-bit-for-amazon-eks-on-aws-fargate-is-here/
+
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-setup-logs-FluentBit.html
+
+https://stackoverflow.com/questions/71891760/aws-fluent-bit-how-to-send-only-needed-logs
+
+https://miro.com/app/board/uXjVP3t-yI0=/?share_link_id=277459976968
+
+Add Ingress details
+--------------------
+https://aws.amazon.com/blogs/opensource/kubernetes-ingress-aws-alb-ingress-controller/
+
+kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n kube-system) -n kube-system
+
+kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n api-dev) -n api-dev
+
+kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n api-staging) -n api-staging
+
+kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n api-production) -n api-production
+
+      1 k8s.gcr.io/kube-state-metrics/kube-state-metrics:v1.9.8
+      1 k8s.gcr.io/metrics-server/metrics-server:v0.6.2
+      3 k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.1.1
+      2 k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+      1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+      2 k8s.gcr.io/sig-storage/csi-provisioner:v2.1.1
+      2 k8s.gcr.io/sig-storage/csi-resizer:v1.0.0
+      2 k8s.gcr.io/sig-storage/csi-snapshotter:v3.0.3
+      3 k8s.gcr.io/sig-storage/livenessprobe:v2.2.0
+      1 k8s.gcr.io/sig-storage/snapshot-controller:v3.0.3
+
+
+kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" |\
+tr -s '[[:space:]]' '\n' |\
+sort |\
+uniq -c
+
+kubectl edit deployment ebs-csi-controller -n kube-system
+:%s/k8s.gcr.io/registry.k8s.io/g
+
+kubectl edit daemonset -n kube-system ebs-csi-node
+:%s/k8s.gcr.io/registry.k8s.io/g
+
+kubectl edit deployment prometheus-kube-state-metrics -n prometheus
+:%s/k8s.gcr.io/registry.k8s.io/g
+
+kubectl edit statefulset -n kube-system ebs-snapshot-controller
+:%s/k8s.gcr.io/registry.k8s.io/g
+
+API3:
+# Optimize database operations
+# Reduce build image size
+# compress build images
+https://aws.amazon.com/blogs/containers/reducing-aws-fargate-startup-times-with-zstd-compressed-container-images/
+
+DevOps-Guru-Analysis
+
+go test -v -coverprofile coverage.out -json > report.json ./...
+
+diskutil eraseDisk FAT32 UNTITLED MBRFormat /dev/disk5s1
+
+wimlib-imagex split /Volumes/CCCOMA_X64FRE_EN-US_DV9/sources/install.wim /Volumes/WIN11/sources/install.swm 4000
+
+{"level":"warn","reqID":"ci86mu8gjr1j5104it80","error":"pq: relation \"t_component_library\" does not exist","caller":"/go/src/github.com/AppSpotr/api3/componentLibrary/handlers.go:51","time":"2023-06-19T14:51:37Z","message":"error listing components"}
+
+{"level":"warn","reqID":"ci86qn8gjr1j5104iv40","error":"pq: relation \"t_component\" does not exist","caller":"/go/src/github.com/AppSpotr/api3/component/handlers.go:49","time":"2023-06-19T14:59:41Z","message":"error listing components"}
+
+
+https://eu-north-1.console.aws.amazon.com/cloudwatch/home?region=eu-north-1#logsV2:log-groups/log-group/eks-api-production/log-events/from-fluent-bit-kube.var.log.containers.api-555bc76f7f-b7sdr_api-production_api3go-bf20e3d9992584c54b2d13939ee8f897dcc9def9e799a96e22288bb9e706f600.log$3FfilterPattern$3Dwarn
+
+
+lsof +aL1 /filesystem
+
+
+histogram_quantile(0.95, sum(rate(http_response_time_seconds_bucket{method!="OPTIONS",job="apps-svc",status="200"}[5m])) by (le,inbound_api,method))
+
+D1kpLi9e
+
+
+
+https://172.31.4.115/se/home/
+
+aws s3api list-objects --bucket aptr-imgix --query "sum(Contents[].Size)" --human-readable
+
+aws s3 ls s3://aptr-imgix/ --recursive --human-readable --summarize --query "Contents[*].[Key,LastModified,Size]" --output table > s3_objects.csv
+
+
+aws s3 cp s3://aptr-imgix/example.txt s3://aptr-imgix/copied-example.txt
+
+
+https://appspotr.imgix.net/2d33db64-82b2-4f87-9c97-f6a53b97c2c1.jpeg
+2d33db64-82b2-4f87-9c97-f6a53b97c2c1.jpeg
+2d33db64-82b2-4f87-9c97-f6a53b97c2c1.jpeg
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:*:*:*"
+            ]
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:*"
+            ],
+            "Resource": "arn:aws:logs:*:*:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject"
+            ],
+            "Resource": "arn:aws:s3:::*"
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::aptr-imgix-copy",
+                "arn:aws:s3:::aptr-icons",
+                "arn:aws:s3:::aptr-imgix-copy/*",
+                "arn:aws:s3:::aptr-icons/*"
+            ]
+        }
+    ]
+}
+
+This policy to copy production S3 buckets to staging s3 bucklets
+
+S3CopyLambdaPolicy
+
+
+aptr-icons: 1561 (43.2 MB)
+aptr-staging-icons: 125 (7.4 MB)
+
+aws s3api list-objects --bucket aptr-files --query "length(Contents)"
+
+
+
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-files --query "length(Contents)"
+8863
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-icons --query "length(Contents)"
+1543
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-imgix --query "length(Contents)"
+101784
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-staging-imgix --query "length(Contents)"
+5096
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-staging-icons --query "length(Contents)"
+1668
+nowsath@Nowsaths-MacBook-Pro ~ % aws s3api list-objects --bucket aptr-staging-files --query "length(Contents)"
+341
+
+
+
+
+Two-Factor Authentication Backup Codes
+Workspace: Unknown Workspace - https://aws-communitybuilders.slack.com/
+Email: undefined
+
+267475470
+859209529
+528879372
+982333841
+692469299
+788743015
+271541055
+329589543
+567629739
+841984330
+
+
+Two-Factor Authentication Backup Codes
+Workspace: Unknown Workspace - https://aws-usergroup-leaders.slack.com/
+Email: undefined
+
+180097836
+984794657
+551130117
+139681689
+115117025
+407188158
+904802818
+532527752
+371780433
+632275775
+
+
+https://docs.google.com/document/d/1qxyyl1LME7bgTVfySBHD_dfwU1MXV4sD/edit?usp=sharing&ouid=110244193263722759280&rtpof=true&sd=true
+
+
+12 0 * * 0 ~/slack_notification/docker_restart.sh >> ~/slack_notification/docker_restart.log
+
+
+https://github.com/kubernetes-sigs/metrics-serverkubectl 
+
+0 0 * * Sun [ $(expr $(date +%W) % 2) -eq 1 ] && /path/to/command
+
+12 0 * * Sun [ $(expr $(date +%W) % 2) -eq 1 ] && ~/slack_notification/docker_restart.sh >> ~/slack_notification/docker_restart.log
+
+
+./gradlew app:bundleRelease --no-daemon --warning-mode=all --stacktrace
+
+https://hooks.slack.com/services/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
+
+test-channel:
+https://hooks.slack.com/services/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
+
+test-channel workflow:
+https://hooks.slack.com/workflows/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
+
+
+The default username and password is 'user' and 'PmWxu18v+WYc'
+
+
+/** Database username */
+
+define( 'DB_USER', 'bn_wordpress' );
+
+
+/** Database password */
+
+define( 'DB_PASSWORD', '99e6980ac1c80e3107981ec10cb5daea5ae84df2ff8bd4a734e295d329b6fecf' );
+
+
+/** Database hostname */
+
+define( 'DB_HOST', '127.0.0.1:3306' );
+
+
+aws s3 sync . s3://aptr-app-cms-staging --delete
+aws s3 sync . s3://aptr-app-cms-apps-staging
+
+
+ssh -i ~/Documents/keys/loopnet-key.pem  ec2-user@16.171.152.180
+
+scp -i ~/Documents/keys/loopnet-key.pem loopnetcommonservice-0.0.1.jar ec2-user@16.171.152.180:~/
+
+curl 'https://backend.dtycoons.com:443/loopnet/api/advertisement/all?offerType=sale&page=0&size=7' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Referer;' \
+  --compressed
+
+curl 'https://backend.dtycoons.com/loopnet/api/advertisement/all?offerType=sale&page=0&size=7' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Referer;' \
+  --compressed
+
+backend.dtycoons.com
+
+
+curl 'http://16.171.152.180:9092/loopnet/api/advertisement/all?offerType=sale&page=0&size=7' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Referer;' \
+  --compressed
+
+
+https://pulse.aws/application/QA9PTR5C?p=4
+Submission ID: ApplicationSubmission-2cMPNibgJOqg99424SJbmtxF3DQ
+
+Received on: 2024-02-14 at 07:17 PM
+Thank you for your application for renewal as a member of our community. You’ll hear back in May if you’ve been accepted for renewal or not.
+
+
+Sincerely,
+
+The AWS Community Builders Team
+
+Submission ID: ApplicationSubmission-2cMPNibgJOqg99424SJbmtxF3DQ
+
+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
+
+
+keytool -genkeypair -alias tomcat -storetype PKCS12 -keyalg RSA -keysize 2048 -keystore keystore.p12 -validity 3650
+
+Enter keystore password:  loopnet2023
+Re-enter new password: loopnet2023
+What is your first and last name?
+  [Unknown]:  Loop Net
+What is the name of your organizational unit?
+  [Unknown]:  LN
+What is the name of your organization?
+  [Unknown]:  LoopNet 
+What is the name of your City or Locality?
+  [Unknown]:  Colombo
+What is the name of your State or Province?
+  [Unknown]:  WP
+What is the two-letter country code for this unit?
+  [Unknown]:  LK
+Is CN=Loop Net, OU=LN, O=LoopNet, L=Colombo, ST=WP, C=LK correct?
+  [no]:  yes
+
+scp -i ~/Documents/keys/loopnet-key.pem keystore.p12 ec2-user@16.171.152.180:~/jarfile/
+
+
+server.port = 443
+server.ssl.key-store = keystore.p12
+server.ssl.key-store-password = loopnet2023
+server.ssl.keyStoreType = PKCS12
+server.ssl.keyAlias = tomcat
+
+Write a cronjob to delete folders except recently created last two folders. It means latest two folders shouldn't be deleted. Also folder name structure is in the date formats e.g: 2024-03-01
+
+
+Write a web application in any language that prints the
+origin public IP of any request it receives in reverse:
+e.g. if my ip is 1.2.3.4 it should be printed as 4.3.2.1
+
+Bonus: store the reverse ip in a DB of your choosing.
+
+Build a docker image of your app and an helm chart. Have a CI\CD pipeline in a platform of your choosing that builds your docker image, push to a docker registry and deploy everything to k8s (you can signup to gcp and get 300$ which should be more than enough).
+
+Please share the following with us:
+Repo with app source code + helm chart + clied
+yml
+url to your deployed app
+any other details you think may be important to your implementation
+
+
+Write a web application in any language that prints the
+origin public IP of any request it receives in reverse:
+e.g. if my ip is 1.2.3.4 it should be printed as 4.3.2.1
+
+Bonus: store the reverse ip in a DB of your choosing.
+
+Build a docker image of your app and an helm chart
+
+0 0 * * 0 ~/slack_notification/delete_xcode_archives.sh >> ~/slack_notification/delete.log 2>&1
+
+06548840484306
+
+
+devdb
+NowsTest890

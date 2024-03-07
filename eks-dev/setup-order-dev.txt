@@ -1,0 +1,155 @@
+eksctl create cluster -f public-cluster.yaml
+
+aws-logging cm issue:
+https://aws.amazon.com/premiumsupport/knowledge-center/cloudwatch-stream-container-logs-eks/
+
+kubectl apply -f aws-observability-namespace.yaml
+kubectl apply -f aws-logging-cloudwatch-configmap.yaml
+
+eksctl create fargateprofile -f fargate-profile.yaml
+
+aws eks --region eu-north-1 update-kubeconfig --name api-dev
+
+kubectl config current-context
+
+kubectl config use-context <context_name>
+
+
+scp -i ~/Documents/my-keys/eks-host.pem -r eks-dev ec2-user@13.51.199.159:~/reverse-ip-python/
+
+eksctl create cluster -f eks-dev-v2-cluster.yaml
+
+aws eks --region eu-north-1 update-kubeconfig --name eks-dev-v2
+
+sg-0451e68500d42d32f
+
+kubectl patch deployment coredns -n kube-system --type=json -p='[{"op": "remove", "path": "/spec/template/metadata/annotations", "value": "eks.amazonaws.com/compute-type"}]'
+
+kubectl rollout restart -n kube-system deployment coredns
+
+aws-logging cm issue:
+https://aws.amazon.com/premiumsupport/knowledge-center/cloudwatch-stream-container-logs-eks/
+
+kubectl apply -f aws-observability-namespace.yaml
+kubectl apply -f aws-logging-cloudwatch-configmap.yaml
+
+eksctl utils associate-iam-oidc-provider --region eu-north-1 --cluster eks-dev-v2 --approve
+
+Create AWS LoadBalancerControllerIAMPolicy and attached to the AWS eksLoadBalancerControllerRole
+https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
+
+eksctl create iamserviceaccount \
+  --cluster=eks-dev-v2 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --role-name "AWSLoadBalancerControllerRole-eks-dev-v2" \
+  --attach-policy-arn=arn:aws:iam::339712873727:policy/eks-LoadBalancerControllerIAMPolicy \
+  --approve
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=eks-dev-v2 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=eu-north-1 \
+  --set vpcId=vpc-03ea84b407700c942
+
+kubectl create -f dev-ingress.yaml
+--> 1 loadbalancer and 2 security groups will be created
+
+helm delete aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system
+
+Metrics server
+https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html
+
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+kubectl get deployment metrics-server -n kube-system
+
+kubectl create ns api-dev
+
+Create secrets:::
+kubectl create secret generic apt-api-config --from-file=APT_API_CONFIG=config.json --namespace=api-dev
+kubectl create secret generic apt-version --from-literal=APT_VERSION=0.19.430 -n api-dev
+
+
+Prometheus & Grafana
+=====================
+
+eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
+  --namespace kube-system \
+  --cluster eks-dev-v2 \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve \
+  --role-name AmazonEKS_EBS_CSI_DriverRole-eks-dev-v2
+
+helm upgrade --install aws-ebs-csi-driver \
+--namespace kube-system \
+--set controller.region=eu-north-1 \
+--set controller.serviceAccount.create=false \
+--set controller.serviceAccount.name=ebs-csi-controller-sa \
+aws-ebs-csi-driver/aws-ebs-csi-driver
+
+# Install Prometheus
+helm upgrade -i prometheus -f prometheus_values.yml prometheus-community/prometheus \
+  --namespace prometheus \
+  --set alertmanager.persistentVolume.storageClass="gp2",server.persistentVolume.storageClass="gp2" \
+  --version 15
+
+
+# Add helm repository for Grafana
+helm repo add grafana https://grafana.github.io/helm-charts
+
+kubectl create ns grafana
+
+helm install grafana grafana/grafana \
+    --namespace grafana \
+    --set persistence.storageClass="gp2" \
+    --set persistence.enabled=true \
+    --set adminPassword='Apps@123' \
+    --values grafana.yaml \
+    --set service.type=NodePort
+
+create security group for grafana loadBalancer
+
+kubectl create -f grafana-eks-dev-ingress.yaml
+https://free-braindumps.com/amazon/free-aws-certified-devops-engineer-professional-dop-c02-braindumps.html?p=2
+
+
+https://app-content.appspotr.com/2631859651225847274/0.19.x/1/patchwork.json
+
+Dev CMS E1AM81QEWWQE5F
+Dev PWA E2R4J05WO367SS
+
+https://us04web.zoom.us/j/71049384569?pwd=ni3KHu6cr5nPJHfiqsEt25Lk7bmt4D.1
+
+
+https://us04web.zoom.us/j/71049384569?pwd=ni3KHu6cr5nPJHfiqsEt25Lk7bmt4D.1
+
+
+aws eks --region eu-north-1 update-kubeconfig --name test-cluster
+
+eksctl utils associate-iam-oidc-provider --region eu-north-1 --cluster test-cluster --approve
+
+aws amp describe-scraper --scraper-id s-44bc2c2e-6250-4b16-baa8-65efaa5c8ed8
+
+arn:aws:iam::006592501465:role/AWSServiceRoleForAmazonPrometheusScraper_534a95a4-ef27-4
+
+
+eksctl create iamidentitymapping --cluster test-cluster --region eu-north-1 --arn arn:aws:iam::006592501465:role/AWSServiceRoleForAmazonPrometheusScraper_534a95a4-ef27-4 --username aps-collector-user
+
+kubectl rollout restart -n kube-system deployment aws-load-balancer-controller
+kubectl rollout restart -n kube-system deployment coredns
+kubectl rollout restart -n kube-system deployment metrics-server
+kubectl rollout restart -n kube-system deployment ebs-csi-controller
+
+kubectl rollout restart -n grafana deployment grafana
+
+
+
+
+
+
+

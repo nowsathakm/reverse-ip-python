@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse IP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Reverse IP Service</h1>
+  <p>Your IP address: {{ client_ip }}</p>
+  <p>Reversed IP: {{ reversed_ip }}</p>
+
+  <h2>Recently visited Original IPs & Reversed IPs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Original IP</th>
+        <th>Reversed IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in reversed_ips %}
+        <tr>
+          <td>{{ item[0] }}</td>
+          <td>{{ item[1] }}</td>
+          <td>{{ item[2] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
