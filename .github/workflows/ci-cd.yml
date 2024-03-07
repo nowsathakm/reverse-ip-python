@@ -32,23 +32,17 @@ jobs:
     - name: Build image
       run: |
         docker build . --file Dockerfile -t reverse-ip:latest
-        docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
+        docker tag reverse-ip:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
-#    - name: Pull images
-#      run: |
-#        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 339712873727.dkr.ecr.eu-north-1.amazonaws.com
-#        echo "Pulling all images.."
-#        docker pull 339712873727.dkr.ecr.eu-north-1.amazonaws.com/api-api:dev || true
-#        docker pull 339712873727.dkr.ecr.eu-north-1.amazonaws.com/api-apps:dev || true
-
-    - name: Build image
+    - name: Pull images
       run: |
-        docker build -t reverse-ip:latest
-        docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
+        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
+#        echo "Pulling image.."
+#        docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev || true
 
     - name: Push image
       run: |
-        docker push 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
 
 #    - name: Update secrets
