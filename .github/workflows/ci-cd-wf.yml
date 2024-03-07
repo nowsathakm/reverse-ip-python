@@ -1,7 +1,12 @@
 name: Deploy Web-app
 
+# Controls when the workflow will run
 on:
-  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/**'
+  # Triggers the workflow on push or pull request events but only for the main branch
   workflow_dispatch:
 
 concurrency:
@@ -29,7 +34,7 @@ jobs:
         secret-ids: |
           CONFIG_ENV, web-app
 
-    - name: Pull images
+    - name: Pull image
       run: |
         aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
         echo "Pulling all images.."
