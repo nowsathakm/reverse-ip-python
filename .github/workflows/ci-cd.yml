@@ -38,7 +38,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker build -f 'Dockerfile' -t reverse-ip:latest
+        docker buildx build -f 'Dockerfile' -t reverse-ip:latest
         docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
     - name: Push image
