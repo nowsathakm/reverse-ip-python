@@ -20,8 +20,20 @@ DB_PORT = config_data["DB_PORT"]
 @app.route("/")
 def reverse_ip():
   # Get client IP
-  client_ip = ip.get()
-  print(client_ip)
+  xff_header = request.headers.get('X-Forwarded-For')
+  xri_header = request.headers.get('X-Real-IP')
+  forwarded_header = request.headers.get('Forwarded')
+  # Check if any of the headers are present
+  if xff_header:
+      client_ip = xff_header.split(',')[0].strip()
+  elif xri_header:
+      client_ip = xri_header
+  elif forwarded_header:
+      # Extracting client IP from Forwarded header, assuming the format is "for=<client_ip>"
+      client_ip = forwarded_header.split('for=')[1].split(';')[0].strip('" ')
+  else:
+      # Fallback to remote address if none of the headers are present
+      client_ip = request.remote_addr
 
   # Reverse the IP
   reversed_ip = ".".join(client_ip.split(".")[::-1])
