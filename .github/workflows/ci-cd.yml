@@ -28,12 +28,11 @@ jobs:
       with:
         secret-ids: |
           CONFIG_ENV, web-app
-
-    - name: Docker Build
-      uses: docker/buildx-action@v1
-      with:
-        push: true
-        file: ./Dockerfile
+          
+    - name: Build image
+      run: |
+        docker build . --file Dockerfile -t reverse-ip:latest
+        docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
 #    - name: Pull images
 #      run: |
