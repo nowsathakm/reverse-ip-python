@@ -29,6 +29,12 @@ jobs:
         secret-ids: |
           CONFIG_ENV, web-app
 
+    - name: Docker Build
+      uses: docker/buildx-action@v1
+      with:
+        push: true
+        file: ./Dockerfile
+
 #    - name: Pull images
 #      run: |
 #        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 339712873727.dkr.ecr.eu-north-1.amazonaws.com
@@ -38,7 +44,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker buildx build -f 'Dockerfile' -t reverse-ip:latest
+        docker build -t reverse-ip:latest
         docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
     - name: Push image
