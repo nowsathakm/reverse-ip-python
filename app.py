@@ -1,19 +1,27 @@
 from flask import Flask, render_template, request
 import psycopg2
+import public_ip as ip
+import os
+import json
 
 app = Flask(__name__)
 
+# Fetch database connection details from environment variables
+CONFIG_ENV = os.environ.get("CONFIG_ENV")
+config_data = json.loads(CONFIG_ENV)
+
 # Database connection details (replace with your own)
-DB_NAME = "reverseipdb"
-DB_USER = "devdb_user"
-DB_PASSWORD = "NowsTest890"
-DB_HOST = "reverseipdb.czuiuosca5yf.eu-north-1.rds.amazonaws.com"
-DB_PORT = "5432"
+DB_NAME = config_data["DB_NAME"]
+DB_USER = config_data["DB_USER"]
+DB_PASSWORD = config_data["DB_PASSWORD"]
+DB_HOST = config_data["DB_HOST"]
+DB_PORT = config_data["DB_PORT"]
 
 @app.route("/")
 def reverse_ip():
   # Get client IP
-  client_ip = request.remote_addr
+  client_ip = ip.get()
+  print(client_ip)
 
   # Reverse the IP
   reversed_ip = ".".join(client_ip.split(".")[::-1])

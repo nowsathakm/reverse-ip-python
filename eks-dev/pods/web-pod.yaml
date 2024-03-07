@@ -4,7 +4,7 @@ metadata:
   name: web-app
   namespace: dev
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 2
