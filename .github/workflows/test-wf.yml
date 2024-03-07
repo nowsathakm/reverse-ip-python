@@ -1,0 +1,60 @@
+name: Deploy web-app
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-app:
+    name: branch - ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.DEV_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.DEV_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+
+    - name: Retreive secrets
+      uses: aws-actions/aws-secretsmanager-get-secrets@v1
+      with:
+        secret-ids: |
+          CONFIG_ENV, web-app
+
+    - name: Docker Build
+      uses: docker/buildx-action@v1
+      with:
+        push: false
+        file: ./Dockerfile
+
+    - name: Pull images
+      run: |
+        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 339712873727.dkr.ecr.eu-north-1.amazonaws.com
+        docker images
+#        echo "Pulling all images.."
+#        docker pull 339712873727.dkr.ecr.eu-north-1.amazonaws.com/api-api:dev || true
+#        docker pull 339712873727.dkr.ecr.eu-north-1.amazonaws.com/api-apps:dev || true
+
+
+
+
+#    - name: Update secrets
+#      run: |
+#        echo  $CONFIG_ENV >> config.json
+#        aws eks --region eu-north-1 update-kubeconfig --name ${{ vars.DEV_CLUSTER_NAME }}
+#        kubectl delete secret env-config -n dev
+#        kubectl create secret generic env-config --from-file=CONFIG_ENV=config.json --namespace=dev
+#
+#    - name: Update EKS environtment
+#      run: |
+#        echo "Restarting all deployments.."
+#        kubectl rollout restart deployment web-app -n dev
+#        kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n dev) -n dev
