@@ -8,7 +8,7 @@ kubectl apply -f aws-logging-cloudwatch-configmap.yaml
 
 eksctl create fargateprofile -f fargate-profile.yaml
 
-aws eks --region eu-north-1 update-kubeconfig --name api-dev
+aws eks --region eu-north-1 update-kubeconfig --name eks-dev
 
 kubectl config current-context
 
@@ -33,26 +33,26 @@ https://aws.amazon.com/premiumsupport/knowledge-center/cloudwatch-stream-contain
 kubectl apply -f aws-observability-namespace.yaml
 kubectl apply -f aws-logging-cloudwatch-configmap.yaml
 
-eksctl utils associate-iam-oidc-provider --region eu-north-1 --cluster eks-dev-v2 --approve
+eksctl utils associate-iam-oidc-provider --region eu-north-1 --cluster eks-dev --approve
 
 Create AWS LoadBalancerControllerIAMPolicy and attached to the AWS eksLoadBalancerControllerRole
 https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
 
 eksctl create iamserviceaccount \
-  --cluster=eks-dev-v2 \
+  --cluster=eks-dev \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --role-name "AWSLoadBalancerControllerRole-eks-dev-v2" \
-  --attach-policy-arn=arn:aws:iam::339712873727:policy/eks-LoadBalancerControllerIAMPolicy \
+  --role-name "AWSLoadBalancerControllerRole-eks-dev" \
+  --attach-policy-arn=arn:aws:iam::339712873727:policy/AWSLoadBalancerControllerIAMPolicy \
   --approve
 
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=eks-dev-v2 \
+  --set clusterName=eks-dev \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=eu-north-1 \
-  --set vpcId=vpc-03ea84b407700c942
+  --set vpcId=vpc-06bc17b92e2453fb7
 
 kubectl create -f dev-ingress.yaml
 --> 1 loadbalancer and 2 security groups will be created
@@ -148,8 +148,30 @@ kubectl rollout restart -n kube-system deployment ebs-csi-controller
 kubectl rollout restart -n grafana deployment grafana
 
 
+docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
 
 
 
 
+    - name: Retreive secrets
+      uses: aws-actions/aws-secretsmanager-get-secrets@v1
+      with:
+        secret-ids: |
+          CONFIG_ENV, web-app
+
+
+    - name: Docker Build
+      uses: docker/buildx-action@v1
+      with:
+        push: true
+        file: ./Dockerfile
+
+    - name: Build image
+      run: |
+        docker build -t reverse-ip:latest
+        docker tag reverse-ip:latest 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
+
+    - name: Push image
+      run: |
+        docker push 339712873727.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
