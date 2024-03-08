@@ -1,7 +1,12 @@
-name: Deploy web-app
+name: Deploy Web-app
 
+# Controls when the workflow will run
 on:
-  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/**'
+  # Triggers the workflow on push or pull request events but only for the main branch
   workflow_dispatch:
 
 concurrency:
@@ -29,7 +34,7 @@ jobs:
         secret-ids: |
           CONFIG_ENV, web-app
 
-    - name: Pull images
+    - name: Pull image
       run: |
         aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
         echo "Pulling all images.."
@@ -45,15 +50,15 @@ jobs:
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/web-app:dev
 
 
-#    - name: Update secrets
-#      run: |
-#        echo  $CONFIG_ENV >> config.json
-#        aws eks --region eu-north-1 update-kubeconfig --name ${{ vars.DEV_CLUSTER_NAME }}
-#        kubectl delete secret env-config -n dev
-#        kubectl create secret generic env-config --from-file=CONFIG_ENV=config.json --namespace=dev
-#
-#    - name: Update EKS environtment
-#      run: |
-#        echo "Restarting all deployments.."
-#        kubectl rollout restart deployment web-app -n dev
-#        kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n dev) -n dev
+    - name: Update secrets
+      run: |
+        echo  $CONFIG_ENV >> config.json
+        aws eks --region eu-north-1 update-kubeconfig --name ${{ vars.DEV_CLUSTER_NAME }}
+        kubectl delete secret env-config -n dev
+        kubectl create secret generic env-config --from-file=CONFIG_ENV=config.json --namespace=dev
+
+    - name: Update EKS environtment
+      run: |
+        echo "Restarting all deployments.."
+        kubectl rollout restart deployment web-app -n dev
+        kubectl delete replicaset $(kubectl get replicaset -o jsonpath='{ .items[?(@.spec.replicas==0)].metadata.name }' -n dev) -n dev

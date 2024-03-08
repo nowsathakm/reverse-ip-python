@@ -47,7 +47,7 @@ def reverse_ip():
   conn.commit()
 
   # Retrieve recent reversed IPs (optional)
-  cur.execute("SELECT * FROM reversed_ips ORDER BY id ASC")  # Order by ID
+  cur.execute("SELECT * FROM ( SELECT * FROM reversed_ips ORDER BY id DESC LIMIT 20 ) AS sub ORDER BY id ASC")  # Order by ID
   reversed_ips = cur.fetchall()
   cur.close()
   conn.close()
